@@ -23,9 +23,23 @@ class Viewer:
             Viewer.window_count += 1
         self.window_name = window_name
 
-        self.res_width = 480
-        self.res_height = 480
+
+        x, y, fx, fy = glfw.get_monitor_workarea(glfw.get_primary_monitor())
+        
+        self.res_width = 600
+        self.res_height = 400
+        
+        glfw.window_hint(glfw.MAXIMIZED, True)
         self.window = glfw.create_window(self.res_width, self.res_height, window_name, None, None)
+
+        mx, my = glfw.get_window_size(self.window)
+
+        self.res_width = mx - mx//4
+        self.res_height = my
+        self.window_data = (mx, my, fy)
+
+        glfw.set_window_pos(self.window, 0, fy-my)
+        glfw.set_window_size(self.window, self.res_width, self.res_height)
 
         if not self.window:
             glfw.terminate()
@@ -48,9 +62,21 @@ class Viewer:
         self.currently_selected = None
         self.mouse_press = False
         self.mouse_held = False
+        self.right_mouse_press = False
+        self.right_mouse_held = False
+
+        self.grab_x, self.grab_y = None, None
+
+        self.arrow_cursor = glfw.create_standard_cursor(glfw.ARROW_CURSOR)
+        self.hand_cursor = glfw.create_standard_cursor(glfw.HAND_CURSOR)
+        self.cursor_mode = utils.ARROW_CURSOR
+
 
     def get_mouse_press(self,):
         return glfw.get_mouse_button(self.window, 0)
+
+    def get_right_mouse_press(self,):
+        return glfw.get_mouse_button(self.window, 1)
 
     def get_mouse_pos(self,):
         return glfw.get_cursor_pos(self.window)
@@ -66,15 +92,19 @@ class Viewer:
         return out
 
     def update_camera_pos(self,):
-        keys = self.get_key_presses()
-        if keys['left'] or keys['a']:
-            self.cam_pos_x -= 2/self.zoom
-        if keys['right'] or keys['d']:
-            self.cam_pos_x += 2/self.zoom
-        if keys['up'] or keys['w']:
-            self.cam_pos_y -= 2/self.zoom
-        if keys['down'] or keys['s']:
-            self.cam_pos_y += 2/self.zoom
+        if self.right_mouse_held:
+            if self.right_mouse_press:
+                self.grab_x, self.grab_y = self.get_mouse_pos()
+        else:
+            keys = self.get_key_presses()
+            if keys['left'] or keys['a']:
+                self.cam_pos_x -= 2/self.zoom
+            if keys['right'] or keys['d']:
+                self.cam_pos_x += 2/self.zoom
+            if keys['up'] or keys['w']:
+                self.cam_pos_y -= 2/self.zoom
+            if keys['down'] or keys['s']:
+                self.cam_pos_y += 2/self.zoom
 
     def mouse_to_node(self, grid):
         mx, my = self.get_mouse_pos()
@@ -194,7 +224,10 @@ class Viewer:
 
     def update_selected(self,):
         if self.mouse_press:
-            self.currently_selected = self.currently_hovered
+            if self.currently_selected != self.currently_hovered:
+                self.currently_selected = self.currently_hovered
+            else:
+                self.currently_selected = None
 
     def update_mouse_press(self,):
 
@@ -207,23 +240,47 @@ class Viewer:
         else:
             self.mouse_held = False
             self.mouse_press = False
+    
+    def update_right_mouse_press(self,):
 
-    def render(self, grid):
+        if self.get_right_mouse_press():
+            if self.right_mouse_held == True:
+                self.right_mouse_press = False
+            else:
+                self.right_mouse_press = True
+                self.right_mouse_held = True
+            self.cursor_mode = utils.HAND_CURSOR
+        else:
+            self.right_mouse_held = False
+            self.right_mouse_press = False
+
+    def update_cursor(self,):
+        if self.cursor_mode == utils.ARROW_CURSOR:
+            glfw.set_cursor(self.window, self.arrow_cursor)
+        if self.cursor_mode == utils.HAND_CURSOR:
+            glfw.set_cursor(self.window, self.hand_cursor)
+
+    def render(self, grid, objects, hovered_object_id, selected_object_id, mode):
+
+        self.cursor_mode = utils.ARROW_CURSOR
         self.update_resolution()
         self.update_zoom()
+        self.update_right_mouse_press()
         self.update_camera_pos()
         self.update_hover(grid)
         self.update_mouse_press()
         self.update_selected()
+        self.update_cursor()
 
         glfw.make_context_current(self.window)
         glViewport(0, 0, self.res_width, self.res_height)
         self.reset()
 
-        self.render_grid(grid)
-        self.render_voxels(grid)
-        self.render_edges(grid)
-        self.render_selected_edges(grid)
+        self.render_grid(grid, mode==utils.VOXELS)
+        self.render_voxels(grid, mode==utils.VOXELS)
+        self.render_edges(grid, objects, hovered_object_id, selected_object_id)
+        if mode == utils.EDGES:
+            self.render_selected_edges(grid)
 
         glfw.swap_buffers(self.window)
         glfw.poll_events()
@@ -232,7 +289,7 @@ class Viewer:
         glClearColor(*colors.CLEAR_COLOR)
         glClear(GL_COLOR_BUFFER_BIT)
 
-    def render_edges(self, grid):
+    def render_edges(self, grid, objects, hovered_object_id, selected_object_id):
         
         grid_height = len(grid)
         grid_width = len(grid[0])
@@ -245,10 +302,10 @@ class Viewer:
                 if grid[i][j].type == utils.CELL_EMPTY:
                     continue
 
+                hovered = hovered_object_id != None and grid[i][j].id in objects[hovered_object_id].nodes 
+                hovered = hovered or (selected_object_id != None and grid[i][j].id in objects[selected_object_id].nodes)
+
                 for direction in ['l', 'r', 'u', 'd']:
-                    
-                    voxel_color = colors.EDGE_FULL
-                    hovered = False
 
                     if direction == 'l':
                         other = utils.get_left(grid, grid[i][j].id)
@@ -279,15 +336,76 @@ class Viewer:
                         hx, hy = (lx+self.box_thickness+self.border_thickness*2, ly+self.border_thickness)
 
 
-                    dim_factor = 1.05
+                    dim_factor = 1.15
                     dim_additive = 0.07
-                    #if self.currently_hovered != None and self.currently_hovered[0] == 'edge':
+                    voxel_color = colors.EDGE_FULL
                     if hovered:
+                        voxel_color = colors.EDGE_SELECTED
                         voxel_color = (voxel_color[0]*dim_factor+dim_additive, voxel_color[1]*dim_factor+dim_additive, voxel_color[2]*dim_factor+dim_additive)
 
                     glColor3f(*voxel_color)
                     
                     self.render_voxel(*self.to_camera(lx, ly), *self.to_camera(hx, hy))
+
+        repeat_nodes = []
+        if hovered_object_id != None:
+            for node in objects[hovered_object_id].nodes:
+                repeat_nodes.append(node)
+        if selected_object_id != None:
+            for node in objects[selected_object_id].nodes:
+                repeat_nodes.append(node)
+
+        for index in repeat_nodes:
+            x, y = index%grid_width, index//grid_width
+            i, j = y, x 
+
+            if grid[i][j].type == utils.CELL_EMPTY:
+                    continue
+
+            hovered = hovered_object_id != None and grid[i][j].id in objects[hovered_object_id].nodes 
+            hovered = hovered or (selected_object_id != None and grid[i][j].id in objects[selected_object_id].nodes)
+
+            for direction in ['l', 'r', 'u', 'd']:
+
+                if direction == 'l':
+                    other = utils.get_left(grid, grid[i][j].id)
+                    if other != None and other.type != utils.CELL_EMPTY and grid[i][j].id in other.neighbors:
+                        continue
+                    lx, ly = (x*(self.border_thickness + self.box_thickness), y*(self.border_thickness + self.box_thickness))
+                    hx, hy = (lx+self.border_thickness, ly+self.box_thickness+self.border_thickness*2)
+
+                if direction == 'r':
+                    other = utils.get_right(grid, grid[i][j].id)
+                    if other != None and other.type != utils.CELL_EMPTY and grid[i][j].id in other.neighbors:
+                        continue
+                    lx, ly = ((x+1)*(self.border_thickness + self.box_thickness), y*(self.border_thickness + self.box_thickness))
+                    hx, hy = (lx+self.border_thickness, ly+self.box_thickness+self.border_thickness*2)
+
+                if direction == 'u':
+                    other = utils.get_up(grid, grid[i][j].id)
+                    if other != None and other.type != utils.CELL_EMPTY and grid[i][j].id in other.neighbors:
+                        continue
+                    lx, ly = (x*(self.border_thickness + self.box_thickness), y*(self.border_thickness + self.box_thickness))
+                    hx, hy = (lx+self.box_thickness+self.border_thickness*2, ly+self.border_thickness)
+
+                if direction == 'd':
+                    other = utils.get_down(grid, grid[i][j].id)
+                    if other != None and other.type != utils.CELL_EMPTY and grid[i][j].id in other.neighbors:
+                        continue
+                    lx, ly = (x*(self.border_thickness + self.box_thickness), (y+1)*(self.border_thickness + self.box_thickness))
+                    hx, hy = (lx+self.box_thickness+self.border_thickness*2, ly+self.border_thickness)
+
+
+                dim_factor = 1.15
+                dim_additive = 0.07
+                voxel_color = colors.EDGE_FULL
+                if hovered:
+                    voxel_color = colors.EDGE_SELECTED
+                    voxel_color = (voxel_color[0]*dim_factor+dim_additive, voxel_color[1]*dim_factor+dim_additive, voxel_color[2]*dim_factor+dim_additive)
+
+                glColor3f(*voxel_color)
+                
+                self.render_voxel(*self.to_camera(lx, ly), *self.to_camera(hx, hy))
 
     def render_selected_edges(self, grid):
         
@@ -333,9 +451,10 @@ class Viewer:
                         hx, hy = (lx+self.box_thickness+self.border_thickness*2, ly+self.border_thickness)
 
                     if not grid[i][j].id in other.neighbors:
-                        edge_color = colors.EDGE_EMPTY
+                        edge_color = colors.EDGE_SELECTED
                     else:
                         edge_color = colors.EDGE_FULL
+
                     dim_factor = 1.07
                     dim_additive = 0.07
                     if self.currently_hovered != None and self.currently_hovered[0] == 'edge' and self.currently_hovered[1] == utils.pair_to_string(other.id, grid[i][j].id):
@@ -346,7 +465,7 @@ class Viewer:
                         lx, ly, hx, hy = utils.make_thicker(lx, ly, hx, hy, 2)
                         self.render_voxel(*self.to_camera(lx, ly), *self.to_camera(hx, hy))
 
-    def render_grid(self, grid):
+    def render_grid(self, grid, render_hover):
         grid_height = len(grid)
         grid_width = len(grid[0])
 
@@ -375,7 +494,7 @@ class Viewer:
                 
                 dim_factor = 0.96
                 dim_additive = -0.05
-                if self.currently_hovered != None and self.currently_hovered[0] == 'node' and self.currently_hovered[2] == grid[i][j].id:
+                if self.currently_hovered != None and self.currently_hovered[0] == 'node' and self.currently_hovered[2] == grid[i][j].id and render_hover:
                     voxel_color = (voxel_color[0]*dim_factor+dim_additive, voxel_color[1]*dim_factor+dim_additive, voxel_color[2]*dim_factor+dim_additive)
 
                 glColor3f(*voxel_color)
@@ -384,7 +503,7 @@ class Viewer:
                 hx, hy = (lx+self.box_thickness, ly+self.box_thickness)
                 self.render_voxel(*self.to_camera(lx, ly), *self.to_camera(hx, hy))
 
-    def render_voxels(self, grid):
+    def render_voxels(self, grid, render_hover):
         grid_height = len(grid)
         grid_width = len(grid[0])
 
@@ -410,7 +529,7 @@ class Viewer:
 
                 dim_factor = 1.05
                 dim_additive = 0.07
-                if self.currently_hovered != None and self.currently_hovered[0] == 'node' and self.currently_hovered[2] == grid[i][j].id:
+                if self.currently_hovered != None and self.currently_hovered[0] == 'node' and self.currently_hovered[2] == grid[i][j].id and render_hover:
                     voxel_color = (voxel_color[0]*dim_factor+dim_additive, voxel_color[1]*dim_factor+dim_additive, voxel_color[2]*dim_factor+dim_additive)
 
                 glColor3f(*voxel_color)

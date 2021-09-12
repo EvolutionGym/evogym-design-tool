@@ -1,3 +1,6 @@
+from glfw import ARROW_CURSOR, HAND_CURSOR
+
+
 CELL_EMPTY = 0
 CELL_RIGID = 1
 CELL_SOFT = 2
@@ -8,7 +11,11 @@ CELL_FIXED = 5
 VOXELS = 0
 EDGES = 1
 
+ARROW_CURSOR = 0
+HAND_CURSOR = 1
+
 import random
+import numpy as np
 
 class Node:
     def __init__(self, type):
@@ -16,6 +23,11 @@ class Node:
         self.neighbors = {}
         self.id = None
         self.old_id = None
+
+class Object:
+    def __init__(self):
+        self.name = None
+        self.nodes = {}
 
 
 def make_blank_grid(width, height):
@@ -110,3 +122,55 @@ def is_valid(grid, x, y):
     if y < 0 or y >= grid_height:
         return False
     return True
+
+def get_objects(grid):
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    objects_grid = []
+    discovered = {}
+    
+    for i in range(grid_height):
+        objects_grid.append([])
+        for j in range(grid_width):
+            objects_grid[-1].append(-1)
+
+    object_count = 0
+    for i in range(grid_height):
+        for j in range(grid_width):
+            node = grid[i][j]
+            if node.type == CELL_EMPTY or node.id in discovered:
+                continue
+            flood_fill_explore(node.id, grid, objects_grid, discovered, object_count)
+            object_count += 1
+    
+    objects = {}
+    for i in range(grid_height):
+        for j in range(grid_width):
+            object_id = objects_grid[i][j]
+            if object_id == -1:
+                continue
+            if not object_id in objects:
+                objects[object_id] = Object()
+            objects[object_id].nodes[grid[i][j].id] = True
+    return objects
+
+def flood_fill_explore(index, grid, objects_grid, discovered, object_count):
+    
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    x, y = index%grid_width, index//grid_width
+
+    discovered[index] = True
+    objects_grid[y][x] = object_count
+
+    nodes = [get_left(grid, index), get_right(grid, index), get_up(grid, index), get_down(grid, index)]
+    for node in nodes:
+        if node == None or node.type == CELL_EMPTY or node.id in discovered:
+            continue
+        if not index in node.neighbors:
+            continue
+        flood_fill_explore(node.id, grid, objects_grid, discovered, object_count)
+
+
+    
+

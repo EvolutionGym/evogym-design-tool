@@ -12,8 +12,17 @@ class Env:
         self.mode = utils.VOXELS
         self.selector = utils.CELL_SOFT
 
+        self.objects = {}
+        self.node_to_object = {}
+        self.unnamed_obj_count = 1
+
+        self.hovered_object_id = None
+        self.selected_object_id = None
+
     def update(self, hovered, selected, mouse_pressed, mouse_held, key_presses):
         
+        self.need_to_update_objects = False
+
         if mouse_pressed:
             self.handle_mouse_press(hovered)
         if mouse_held:
@@ -21,6 +30,50 @@ class Env:
 
         self.handle_key_presses(key_presses)
 
+        if self.need_to_update_objects:
+            self.update_objects()
+
+        self.update_active_objects(hovered, selected)
+
+    def update_active_objects(self, hovered, selected):
+
+        self.hovered_object_id = None
+        if hovered != None and hovered[0] == 'node' and utils.get_node_by_index(self.grid, hovered[2]).type != utils.CELL_EMPTY:
+            self.hovered_object_id = self.node_to_object[hovered[2]]
+        if hovered != None and hovered[0] == 'edge':
+            a, b = tuple(hovered[1].split())
+            a, b = int(a), int(b)
+            self.hovered_object_id = self.node_to_object[a]
+        
+
+        self.selected_object_id = None
+        if selected != None and selected[0] == 'node' and utils.get_node_by_index(self.grid, selected[2]).type != utils.CELL_EMPTY:
+            self.selected_object_id = self.node_to_object[selected[2]]
+        if selected != None and selected[0] == 'edge':
+            a, b = tuple(selected[1].split())
+            a, b = int(a), int(b)
+            self.selected_object_id = self.node_to_object[a]
+
+    def update_objects(self,):
+        new_objects = utils.get_objects(self.grid)
+        for object_id, obj in new_objects.items():
+            for node_id in obj.nodes:
+                if obj.name != None:
+                    break
+                for curr_obj_id, curr_obj in self.objects.items():
+                    if node_id in curr_obj.nodes:
+                        obj.name = curr_obj.name
+                        break
+            if obj.name == None:
+                obj.name = f'new_object_{self.unnamed_obj_count}'
+                self.unnamed_obj_count += 1
+        self.objects = new_objects
+
+        self.node_to_object = {}
+        for object_id, obj in self.objects.items():
+            for node_id in obj.nodes:
+                self.node_to_object[node_id] = object_id
+        
     def handle_key_presses(self, key_presses):
         if key_presses['z']:
             self.selector = utils.CELL_EMPTY
@@ -39,7 +92,7 @@ class Env:
 
         if hovered == None:
             return
-            
+
         if self.mode == utils.EDGES and hovered[0] == 'edge':
             a, b = tuple(hovered[1].split())
             a, b = int(a), int(b)
@@ -73,6 +126,7 @@ class Env:
             b_node.neighbors[a_id] = True
             a_node.neighbors[b_id] = True
 
+        self.need_to_update_objects = True
 
     def remove_node(self, index):
         self.get_node_by_index(index).type = utils.CELL_EMPTY
@@ -86,6 +140,8 @@ class Env:
             if node.id in self.get_node_by_index(index).neighbors:
                 del self.get_node_by_index(index).neighbors[node.id]
 
+        self.need_to_update_objects = True
+
     def add_node(self, index, value):
         self.get_node_by_index(index).type = value
         neighbors = [self.get_left(index), self.get_right(index), self.get_up(index), self.get_down(index)]
@@ -95,6 +151,8 @@ class Env:
                 continue
             node.neighbors[index] = True
             self.get_node_by_index(index).neighbors[node.id] = True
+
+        self.need_to_update_objects = True
 
     def edit_node(self, index, value):
         self.get_node_by_index(index).type = value
