@@ -39,7 +39,7 @@ class Viewer:
         self.window_data = (mx, my, fy)
 
         glfw.set_window_pos(self.window, 0, fy-my)
-        glfw.set_window_size(self.window, self.res_width, self.res_height)
+        glfw.set_window_size(self.window, self.res_width, self.res_height-200)
 
         if not self.window:
             glfw.terminate()
@@ -66,6 +66,7 @@ class Viewer:
         self.right_mouse_held = False
 
         self.grab_x, self.grab_y = None, None
+        self.init_cam_pos_x, self.init_cam_pos_y = None, None
 
         self.arrow_cursor = glfw.create_standard_cursor(glfw.ARROW_CURSOR)
         self.hand_cursor = glfw.create_standard_cursor(glfw.HAND_CURSOR)
@@ -95,6 +96,12 @@ class Viewer:
         if self.right_mouse_held:
             if self.right_mouse_press:
                 self.grab_x, self.grab_y = self.get_mouse_pos()
+                self.init_cam_pos_x, self.init_cam_pos_y = self.cam_pos_x, self.cam_pos_y
+            cx, cy = self.get_mouse_pos()
+            dx, dy = self.grab_x - cx, self.grab_y - cy
+
+            dx, dy = (dx+1)/self.zoom, (-dy+1)/self.zoom
+            self.cam_pos_x, self.cam_pos_y = self.init_cam_pos_x + dx, self.init_cam_pos_y - dy
         else:
             keys = self.get_key_presses()
             if keys['left'] or keys['a']:
@@ -222,12 +229,37 @@ class Viewer:
 
         #print(self.currently_hovered)
 
-    def update_selected(self,):
+    def update_selected(self, grid, node_to_object, just_altered):
         if self.mouse_press:
             if self.currently_selected != self.currently_hovered:
-                self.currently_selected = self.currently_hovered
+                
+                hovered_object = None
+                hovered = self.currently_hovered
+                if hovered != None and hovered[0] == 'node' and utils.get_node_by_index(grid, hovered[2]).type != utils.CELL_EMPTY:
+                    hovered_object = node_to_object[hovered[2]]
+                if hovered != None and hovered[0] == 'edge':
+                    a, b = tuple(hovered[1].split())
+                    a, b = int(a), int(b)
+                    hovered_object = node_to_object[a]
+
+                selected_object = None
+                selected = self.currently_selected
+                if selected != None and selected[0] == 'node' and utils.get_node_by_index(grid, selected[2]).type != utils.CELL_EMPTY:
+                    selected_object = node_to_object[selected[2]]
+                if selected != None and selected[0] == 'edge':
+                    a, b = tuple(selected[1].split())
+                    a, b = int(a), int(b)
+                    selected = node_to_object[a]
+
+                if hovered_object != None and selected_object != hovered_object:
+                    self.currently_selected = self.currently_hovered
+                else:
+                    self.currently_selected = None
             else:
                 self.currently_selected = None
+            
+        if just_altered != None:
+            self.currently_selected = just_altered
 
     def update_mouse_press(self,):
 
@@ -260,7 +292,7 @@ class Viewer:
         if self.cursor_mode == utils.HAND_CURSOR:
             glfw.set_cursor(self.window, self.hand_cursor)
 
-    def render(self, grid, objects, hovered_object_id, selected_object_id, mode):
+    def render(self, grid, objects, node_to_object, hovered_object_id, selected_object_id, just_altered, mode):
 
         self.cursor_mode = utils.ARROW_CURSOR
         self.update_resolution()
@@ -269,7 +301,7 @@ class Viewer:
         self.update_camera_pos()
         self.update_hover(grid)
         self.update_mouse_press()
-        self.update_selected()
+        self.update_selected(grid, node_to_object, just_altered)
         self.update_cursor()
 
         glfw.make_context_current(self.window)

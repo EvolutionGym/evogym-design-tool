@@ -19,21 +19,31 @@ class Env:
         self.hovered_object_id = None
         self.selected_object_id = None
 
-    def update(self, hovered, selected, mouse_pressed, mouse_held, key_presses):
+        self.just_altered = None
+
+    def update(self, hovered, selected, mouse_pressed, mouse_held, key_presses, mode_data):
         
         self.need_to_update_objects = False
+        self.just_altered = None
 
         if mouse_pressed:
             self.handle_mouse_press(hovered)
         if mouse_held:
             self.handle_mouse_held(hovered)
 
-        self.handle_key_presses(key_presses)
+        # self.handle_key_presses(key_presses)
+        self.update_mode(mode_data)
 
         if self.need_to_update_objects:
             self.update_objects()
 
         self.update_active_objects(hovered, selected)
+
+        print(self.just_altered)
+
+    def update_mode(self, mode_data):
+        self.mode = mode_data['mode']
+        self.selector = mode_data['selector']
 
     def update_active_objects(self, hovered, selected):
 
@@ -44,7 +54,6 @@ class Env:
             a, b = tuple(hovered[1].split())
             a, b = int(a), int(b)
             self.hovered_object_id = self.node_to_object[a]
-        
 
         self.selected_object_id = None
         if selected != None and selected[0] == 'node' and utils.get_node_by_index(self.grid, selected[2]).type != utils.CELL_EMPTY:
@@ -74,19 +83,19 @@ class Env:
             for node_id in obj.nodes:
                 self.node_to_object[node_id] = object_id
         
-    def handle_key_presses(self, key_presses):
-        if key_presses['z']:
-            self.selector = utils.CELL_EMPTY
-        if key_presses['x']:
-            self.selector = utils.CELL_RIGID
-        if key_presses['c']:
-            self.selector = utils.CELL_SOFT
-        if key_presses['v']:
-            self.selector = utils.CELL_ACT_H
-        if key_presses['b']:
-            self.mode = utils.VOXELS
-        if key_presses['n']:
-            self.mode = utils.EDGES
+    # def handle_key_presses(self, key_presses):
+    #     if key_presses['z']:
+    #         self.selector = utils.CELL_EMPTY
+    #     if key_presses['x']:
+    #         self.selector = utils.CELL_RIGID
+    #     if key_presses['c']:
+    #         self.selector = utils.CELL_SOFT
+    #     if key_presses['v']:
+    #         self.selector = utils.CELL_ACT_H
+    #     if key_presses['b']:
+    #         self.mode = utils.VOXELS
+    #     if key_presses['n']:
+    #         self.mode = utils.EDGES
 
     def handle_mouse_press(self, hovered):
 
@@ -97,6 +106,7 @@ class Env:
             a, b = tuple(hovered[1].split())
             a, b = int(a), int(b)
             self.toggle_connection(a, b)
+            self.just_altered = hovered
 
     def handle_mouse_held(self, hovered):
         
@@ -112,8 +122,11 @@ class Env:
             else:
                 if node.type == utils.CELL_EMPTY:
                     self.add_node(hovered[2], self.selector)
+                    self.just_altered = hovered
                 else:
-                    self.edit_node(hovered[2], self.selector)
+                    if node.type != self.selector:
+                        self.edit_node(hovered[2], self.selector)
+                        self.just_altered = hovered
 
     def toggle_connection(self, a_id, b_id):
         a_node = self.get_node_by_index(a_id)
