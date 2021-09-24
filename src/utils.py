@@ -1,6 +1,3 @@
-from glfw import ARROW_CURSOR, HAND_CURSOR
-
-
 CELL_EMPTY = 0
 CELL_RIGID = 1
 CELL_SOFT = 2
@@ -29,6 +26,12 @@ class Object:
     def __init__(self):
         self.name = None
         self.nodes = {}
+
+    def copy(self,):
+        obj = Object()
+        obj.name = self.name
+        obj.nodes = self.nodes.copy()
+        return obj
 
 
 def make_blank_grid(width, height):

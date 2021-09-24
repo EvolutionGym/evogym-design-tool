@@ -72,6 +72,9 @@ class Viewer:
         self.hand_cursor = glfw.create_standard_cursor(glfw.HAND_CURSOR)
         self.cursor_mode = utils.ARROW_CURSOR
 
+    def load(self, file_name):
+        self.currently_hovered = None
+        self.currently_selected = None
 
     def get_mouse_press(self,):
         return glfw.get_mouse_button(self.window, 0)

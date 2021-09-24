@@ -1,5 +1,6 @@
 from colors import ACT_H_VOXEL, ACT_V_VOXEL, EMPTY_VOXEL, FIXED_VOXEL, RIGID_VOXEL, SOFT_VOXEL
 import utils
+import data_manager
 
 class Env:
     def __init__(self):
@@ -20,6 +21,9 @@ class Env:
         self.selected_object_id = None
 
         self.just_altered = None
+        self.need_to_update_objects = False
+
+        self.dm = data_manager.DataManager()
 
     def update(self, hovered, selected, mouse_pressed, mouse_held, key_presses, mode_data):
         
@@ -39,7 +43,13 @@ class Env:
 
         self.update_active_objects(hovered, selected)
 
-        print(self.just_altered)
+    def load(self, file_name):
+        self.grid_width, self.grid_height, self.grid, self.objects, self.node_to_object, self.unnamed_obj_count = self.dm.load(file_name)
+        self.hovered_object_id = None
+        self.selected_object_id = None
+
+    def save(self, file_name):
+        self.dm.save(file_name, self.grid, self.objects)
 
     def update_mode(self, mode_data):
         self.mode = mode_data['mode']
@@ -64,7 +74,9 @@ class Env:
             self.selected_object_id = self.node_to_object[a]
 
     def update_objects(self,):
+
         new_objects = utils.get_objects(self.grid)
+
         for object_id, obj in new_objects.items():
             for node_id in obj.nodes:
                 if obj.name != None:
@@ -76,12 +88,16 @@ class Env:
             if obj.name == None:
                 obj.name = f'new_object_{self.unnamed_obj_count}'
                 self.unnamed_obj_count += 1
-        self.objects = new_objects
+
+        self.objects = {}
+        for object_id, obj in new_objects.items():
+            self.objects[object_id] = obj.copy()
 
         self.node_to_object = {}
         for object_id, obj in self.objects.items():
             for node_id in obj.nodes:
                 self.node_to_object[node_id] = object_id
+
         
     # def handle_key_presses(self, key_presses):
     #     if key_presses['z']:
