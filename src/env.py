@@ -1,3 +1,4 @@
+from json import load
 from colors import ACT_H_VOXEL, ACT_V_VOXEL, EMPTY_VOXEL, FIXED_VOXEL, RIGID_VOXEL, SOFT_VOXEL
 import utils
 import data_manager
@@ -44,7 +45,11 @@ class Env:
         self.update_active_objects(hovered, selected)
 
     def load(self, file_name):
-        self.grid_width, self.grid_height, self.grid, self.objects, self.node_to_object, self.unnamed_obj_count = self.dm.load(file_name)
+        loaded_state = self.dm.load(file_name)
+        if loaded_state == None:
+            return
+
+        self.grid_width, self.grid_height, self.grid, self.objects, self.node_to_object, self.unnamed_obj_count = loaded_state
         self.hovered_object_id = None
         self.selected_object_id = None
 

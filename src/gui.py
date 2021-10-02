@@ -94,7 +94,7 @@ class GUI:
         self.old_mode = utils.VOXELS
         self.objects = {}
 
-        self.save_path = 'exported_data'
+        self.save_path = 'exported'
         self.default_type = '.json'
 
         self.save_env_func = None
@@ -201,11 +201,13 @@ class GUI:
 
     def load_click(self,):
         file_name = self.clean_name(self.pi_name.get())
+        load_path = os.path.join(self.save_path, file_name)
+
         if len(self.objects.items()) > 0:
             if mb.askokcancel(title='Overwrite Warning', message=f'Are you sure you want to overwrite editor contents with data from {file_name}?'):
-                self.load(file_name)
+                self.load(load_path)
         else:
-            self.load(file_name)
+            self.load(load_path)
 
     def save_click(self):
 
@@ -234,11 +236,16 @@ class GUI:
 
         file_name = self.clean_name(self.pi_name.get())
         save_path = os.path.join(self.save_path, file_name)
+
+        save_directory = os.path.join(self.save_path)
+        if not os.path.exists(save_directory):
+            os.makedirs(save_directory)
+
         if os.path.exists(save_path):
             if mb.askokcancel(title='Overwrite Warning', message=f'Are you sure you want to overwrite {file_name} with contents from the editor?'):
-                self.save(file_name)
+                self.save(save_path)
         else:
-            self.save(file_name)
+            self.save(save_path)
 
     def clean_name(self, file_name):
         if not '.' in file_name:
