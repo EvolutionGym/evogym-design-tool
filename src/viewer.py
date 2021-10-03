@@ -67,6 +67,8 @@ class Viewer:
         self.grab_x, self.grab_y = None, None
         self.init_cam_pos_x, self.init_cam_pos_y = None, None
 
+        self.grid_width, self.grid_height = None, None
+
         self.arrow_cursor = glfw.create_standard_cursor(glfw.ARROW_CURSOR)
         self.hand_cursor = glfw.create_standard_cursor(glfw.HAND_CURSOR)
         self.cursor_mode = utils.ARROW_CURSOR
@@ -75,9 +77,13 @@ class Viewer:
         self.currently_hovered = None
         self.currently_selected = None
     
-    def change_gs(self,):
+    def change_gs(self, new_width, new_height):
         self.currently_hovered = None
         self.currently_selected = None
+
+        height_diff = new_height - self.grid_height
+        self.cam_pos_y += height_diff*(self.border_thickness + self.box_thickness)
+        
 
     def get_mouse_press(self,):
         return glfw.get_mouse_button(self.window, 0)
@@ -301,6 +307,7 @@ class Viewer:
     def render(self, grid, objects, node_to_object, hovered_object_id, selected_object_id, just_altered, mode):
 
         self.cursor_mode = utils.ARROW_CURSOR
+        self.grid_width, self.grid_height = len(grid[0]), len(grid)
         self.update_resolution()
         self.update_zoom()
         self.update_right_mouse_press()

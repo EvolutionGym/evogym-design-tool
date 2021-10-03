@@ -257,16 +257,16 @@ class GUI:
             if new_height < self.old_gs_height:
                 if mb.askokcancel(title='Delete Warning', message=f'Rows/columns will be deleted from the right/top. Continue?'):                
                     self.gs_env_func(new_width, new_height)
-                    self.gs_viewer_func()
+                    self.gs_viewer_func(new_width, new_height)
             else:
                 if mb.askokcancel(title='Delete Warning', message=f'Columns will be deleted from the right. Continue?'):                
                     self.gs_env_func(new_width, new_height)
-                    self.gs_viewer_func()
+                    self.gs_viewer_func(new_width, new_height)
 
         else:
             if mb.askokcancel(title='Delete Warning', message=f'Rows will be deleted from the top. Continue?'):                
                 self.gs_env_func(new_width, new_height)
-                self.gs_viewer_func()
+                self.gs_viewer_func(new_width, new_height)
 
     def load_click(self,):
         file_name = self.clean_name(self.pi_name.get())
