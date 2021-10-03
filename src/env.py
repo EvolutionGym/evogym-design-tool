@@ -103,7 +103,6 @@ class Env:
             for node_id in obj.nodes:
                 self.node_to_object[node_id] = object_id
 
-        
     # def handle_key_presses(self, key_presses):
     #     if key_presses['z']:
     #         self.selector = utils.CELL_EMPTY
@@ -118,6 +117,127 @@ class Env:
     #     if key_presses['n']:
     #         self.mode = utils.EDGES
 
+    def change_gs(self, new_width, new_height):
+
+        old_width = self.grid_width
+        if new_width < old_width:
+            for i in range(new_width, old_width):
+                self.remove_col(new_width, with_cleanup=True)
+        if new_width > old_width:
+            for i in range(old_width, new_width):
+                self.add_col(i, with_cleanup=True)
+
+        old_height = self.grid_height
+        if new_height < old_height:
+            for i in range(0, old_height-new_height):
+                self.remove_row(0, with_cleanup=True)
+        if new_height > old_height:
+            for i in range(0, new_height-old_height):
+                self.add_row(0, with_cleanup=True)
+
+        self.grid_height = len(self.grid)
+        self.grid_width = len(self.grid[0])
+
+        self.hovered_object_id = None
+        self.selected_object_id = None
+
+        # print(self.grid_width, self.grid_height)
+
+    def remove_col(self, col_idx, with_cleanup=True):
+
+        # print(f'Removing col {col_idx}')
+
+        for y in range(self.grid_height):
+            if self.grid[y][col_idx].type != utils.CELL_EMPTY:
+                # print('Removing: ', self.grid[y][col_idx].id)
+                self.remove_node(self.grid[y][col_idx].id)
+                self.update_objects()
+        for y in range(self.grid_height):
+            del self.grid[y][col_idx]
+
+        if with_cleanup:    
+            self.grid_height = len(self.grid)
+            self.grid_width = len(self.grid[0])
+            self.update_indicies()
+
+    def add_col(self, col_idx, with_cleanup=True):
+
+        # print(f'Adding col {col_idx}')
+
+        for y in range(self.grid_height):
+            self.grid[y].insert(col_idx, utils.Node(0))
+
+        if with_cleanup:    
+            self.grid_height = len(self.grid)
+            self.grid_width = len(self.grid[0])
+            self.update_indicies()
+
+    def remove_row(self, row_idx, with_cleanup=True):
+
+    
+        # print(f'Removing row {row_idx}')
+
+        for x in range(self.grid_width):
+            if self.grid[row_idx][x].type != utils.CELL_EMPTY:
+                # print('Removing: ', self.grid[row_idx][x].id)
+                self.remove_node(self.grid[row_idx][x].id)
+                self.update_objects()
+        del self.grid[row_idx]
+
+        if with_cleanup:    
+            self.grid_height = len(self.grid)
+            self.grid_width = len(self.grid[0])
+            self.update_indicies()
+
+    def add_row(self, row_idx, with_cleanup=True):
+
+        # print(f'Add row {row_idx}')
+
+        self.grid.insert(row_idx, [])
+        for x in range(self.grid_width):
+            self.grid[row_idx].append(utils.Node(0))
+
+        if with_cleanup:    
+            self.grid_height = len(self.grid)
+            self.grid_width = len(self.grid[0])
+            self.update_indicies()
+
+    def update_indicies(self,):
+        
+        # get mapping
+        utils.set_old_ids(self.grid)
+        utils.set_ids(self.grid)
+
+        old_to_new = {}
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                old_to_new[self.grid[y][x].old_id] = self.grid[y][x].id
+
+        disp = []
+        for key, value in old_to_new.items():
+            disp.append((key, value))
+
+        # update neighbors
+        for y in range(self.grid_height):
+            for x in range(self.grid_width):
+                neighbors_copy = self.grid[y][x].neighbors.copy()
+                self.grid[y][x].neighbors = {}
+                for neigh in neighbors_copy:
+                    self.grid[y][x].neighbors[old_to_new[neigh]] = True 
+
+        # update objects
+        for object_id, obj in self.objects.items():
+            nodes_copy = obj.nodes.copy()
+            obj.nodes = {}
+            for node in nodes_copy:
+                obj.nodes[old_to_new[node]] = True
+
+        # update node to objects
+        self.node_to_object = {}
+        for object_id, obj in self.objects.items():
+            for node_id in obj.nodes:
+                self.node_to_object[node_id] = object_id
+        
     def handle_mouse_press(self, hovered):
 
         if hovered == None:
@@ -167,12 +287,12 @@ class Env:
         neighbors = [self.get_left(index), self.get_right(index), self.get_up(index), self.get_down(index)]
 
         for node in neighbors:
-            if node == None:
+            if node == None or node.type == utils.CELL_EMPTY:
                 continue
             if index in node.neighbors:
                 del node.neighbors[index]
             if node.id in self.get_node_by_index(index).neighbors:
-                del self.get_node_by_index(index).neighbors[node.id]
+                del self.get_node_by_index(index).neighbors[node.id]            
 
         self.need_to_update_objects = True
 
@@ -181,7 +301,7 @@ class Env:
         neighbors = [self.get_left(index), self.get_right(index), self.get_up(index), self.get_down(index)]
 
         for node in neighbors:
-            if node == None:
+            if node == None or node.type == utils.CELL_EMPTY:
                 continue
             node.neighbors[index] = True
             self.get_node_by_index(index).neighbors[node.id] = True

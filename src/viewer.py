@@ -23,7 +23,6 @@ class Viewer:
             Viewer.window_count += 1
         self.window_name = window_name
 
-
         x, y, fx, fy = glfw.get_monitor_workarea(glfw.get_primary_monitor())
         
         self.res_width = 600
@@ -73,6 +72,10 @@ class Viewer:
         self.cursor_mode = utils.ARROW_CURSOR
 
     def load(self, file_name):
+        self.currently_hovered = None
+        self.currently_selected = None
+    
+    def change_gs(self,):
         self.currently_hovered = None
         self.currently_selected = None
 

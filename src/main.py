@@ -9,7 +9,12 @@ main_env = env.Env()
 main_viewer = viewer.Viewer('EvoGym Design Interface')
 gui_viewer = gui.GUI('EvoGym Design Interface GUI', main_viewer.window_data)
 
-gui_viewer.set_funcs(main_env.save, main_env.load, main_viewer.load)
+gui_viewer.set_funcs(
+    main_env.save, 
+    main_env.load, 
+    main_viewer.load, 
+    main_env.change_gs,
+    main_viewer.change_gs)
 
 def main():
     while not main_viewer.get_window_close():
