@@ -38,7 +38,12 @@ class Viewer:
         self.window_data = (mx, my, fy)
 
         glfw.set_window_pos(self.window, 0, fy-my)
-        glfw.set_window_size(self.window, self.res_width, self.res_height-200)
+
+        self.debug = False
+        if self.debug:
+            glfw.set_window_size(self.window, self.res_width, self.res_height-200)
+        else:
+            glfw.set_window_size(self.window, self.res_width, self.res_height)
 
         if not self.window:
             glfw.terminate()
