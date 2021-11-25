@@ -30,27 +30,34 @@ class DataManager():
 
                 # assert lists of same length
                 assert len(obj_data['indicies'])  == len(obj_data['types'])
+                assert len(obj_data['indicies'])  == len(obj_data['neighbors'])
+
                 objects[unnamed_obj_count-1] = utils.Object()
                 curr_object = objects[unnamed_obj_count-1]
                 curr_object.name = name
 
                 # read in indicies and types
                 for i in range(len(obj_data['indicies'])):
-                    index_curr = obj_data['indicies'][i]
+                    index_curr = utils.flip_y(obj_data['indicies'][i], grid_width, grid_height)
                     type_curr = obj_data['types'][i]
                     curr_object.nodes[index_curr] = True
                     utils.get_node_by_index(grid, index_curr).type = type_curr
 
+                    # set node neighbors
+                    index_raw = obj_data['indicies'][i]
+                    for nei in obj_data['neighbors'][f'{index_raw}']:
+                        utils.get_node_by_index(grid, index_curr).neighbors[utils.flip_y(nei, grid_width, grid_height)] = True
+
                 # set node neighbors
-                for node in curr_object.nodes:
-                    neighbors = [
-                        utils.get_left(grid, node), 
-                        utils.get_right(grid, node), 
-                        utils.get_up(grid, node), 
-                        utils.get_down(grid, node)]
-                    for nei in neighbors:
-                        if nei != None and nei.id in curr_object.nodes:
-                            utils.get_node_by_index(grid, node).neighbors[nei.id] = True
+                # for node in curr_object.nodes:
+                #     neighbors = [
+                #         utils.get_left(grid, node), 
+                #         utils.get_right(grid, node), 
+                #         utils.get_up(grid, node), 
+                #         utils.get_down(grid, node)]
+                #     for nei in neighbors:
+                #         if nei != None and nei.id in curr_object.nodes:
+                #             utils.get_node_by_index(grid, node).neighbors[nei.id] = True
 
                 #update object counts            
                 unnamed_obj_count += 1  
@@ -71,7 +78,9 @@ class DataManager():
                             unnamed_obj_count = existing_int+1
                     except:
                         pass
-        except:
+
+
+        except Exception as e:
             warnings.warn("Could not load file. Please check that your file has not been corrupted.")
             return None
 
@@ -91,10 +100,17 @@ class DataManager():
         for object_id, obj in objects.items():
             indicies = []
             types = []
+            neighbors = {}
             for idx in obj.nodes:
-                indicies.append(idx)
+                indicies.append(utils.flip_y(idx, grid_width, grid_height))
                 types.append(utils.get_node_by_index(grid, idx).type)
-            obj_dict = {'indicies': indicies, 'types': types}
+
+                ns = list(utils.get_node_by_index(grid, idx).neighbors.keys())
+                for i in range(len(ns)):
+                    ns[i] = utils.flip_y(ns[i], grid_width, grid_height)
+                neighbors[utils.flip_y(idx, grid_width, grid_height)] = ns
+
+            obj_dict = {'indicies': indicies, 'types': types, 'neighbors': neighbors}
 
             objects_dict[obj.name] = obj_dict
         out['objects'] = objects_dict

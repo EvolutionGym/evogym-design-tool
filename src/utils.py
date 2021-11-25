@@ -33,6 +33,10 @@ class Object:
         obj.nodes = self.nodes.copy()
         return obj
 
+def flip_y(idx, width, height):
+    x,y = idx%width, idx//width
+    y = (height-1)-y
+    return y*width + x
 
 def make_blank_grid(width, height):
     grid = []
