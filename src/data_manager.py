@@ -29,22 +29,22 @@ class DataManager():
             for name, obj_data in state['objects'].items():
 
                 # assert lists of same length
-                assert len(obj_data['indicies'])  == len(obj_data['types'])
-                assert len(obj_data['indicies'])  == len(obj_data['neighbors'])
+                assert len(obj_data['indices'])  == len(obj_data['types'])
+                assert len(obj_data['indices'])  == len(obj_data['neighbors'])
 
                 objects[unnamed_obj_count-1] = utils.Object()
                 curr_object = objects[unnamed_obj_count-1]
                 curr_object.name = name
 
-                # read in indicies and types
-                for i in range(len(obj_data['indicies'])):
-                    index_curr = utils.flip_y(obj_data['indicies'][i], grid_width, grid_height)
+                # read in indices and types
+                for i in range(len(obj_data['indices'])):
+                    index_curr = utils.flip_y(obj_data['indices'][i], grid_width, grid_height)
                     type_curr = obj_data['types'][i]
                     curr_object.nodes[index_curr] = True
                     utils.get_node_by_index(grid, index_curr).type = type_curr
 
                     # set node neighbors
-                    index_raw = obj_data['indicies'][i]
+                    index_raw = obj_data['indices'][i]
                     for nei in obj_data['neighbors'][f'{index_raw}']:
                         utils.get_node_by_index(grid, index_curr).neighbors[utils.flip_y(nei, grid_width, grid_height)] = True
 
@@ -98,11 +98,11 @@ class DataManager():
 
         objects_dict = {}
         for object_id, obj in objects.items():
-            indicies = []
+            indices = []
             types = []
             neighbors = {}
             for idx in obj.nodes:
-                indicies.append(utils.flip_y(idx, grid_width, grid_height))
+                indices.append(utils.flip_y(idx, grid_width, grid_height))
                 types.append(utils.get_node_by_index(grid, idx).type)
 
                 ns = list(utils.get_node_by_index(grid, idx).neighbors.keys())
@@ -110,7 +110,7 @@ class DataManager():
                     ns[i] = utils.flip_y(ns[i], grid_width, grid_height)
                 neighbors[utils.flip_y(idx, grid_width, grid_height)] = ns
 
-            obj_dict = {'indicies': indicies, 'types': types, 'neighbors': neighbors}
+            obj_dict = {'indices': indices, 'types': types, 'neighbors': neighbors}
 
             objects_dict[obj.name] = obj_dict
         out['objects'] = objects_dict

@@ -158,7 +158,7 @@ class Env:
         if with_cleanup:    
             self.grid_height = len(self.grid)
             self.grid_width = len(self.grid[0])
-            self.update_indicies()
+            self.update_indices()
 
     def add_col(self, col_idx, with_cleanup=True):
 
@@ -170,7 +170,7 @@ class Env:
         if with_cleanup:    
             self.grid_height = len(self.grid)
             self.grid_width = len(self.grid[0])
-            self.update_indicies()
+            self.update_indices()
 
     def remove_row(self, row_idx, with_cleanup=True):
 
@@ -187,7 +187,7 @@ class Env:
         if with_cleanup:    
             self.grid_height = len(self.grid)
             self.grid_width = len(self.grid[0])
-            self.update_indicies()
+            self.update_indices()
 
     def add_row(self, row_idx, with_cleanup=True):
 
@@ -200,9 +200,9 @@ class Env:
         if with_cleanup:    
             self.grid_height = len(self.grid)
             self.grid_width = len(self.grid[0])
-            self.update_indicies()
+            self.update_indices()
 
-    def update_indicies(self,):
+    def update_indices(self,):
         
         # get mapping
         utils.set_old_ids(self.grid)
