@@ -1,4 +1,4 @@
-name: edt-env-test
+name: edt-env
 channels:
   - defaults
 dependencies:
