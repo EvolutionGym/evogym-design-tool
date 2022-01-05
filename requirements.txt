@@ -1,5 +1,7 @@
-glfw
-numpy
-PyOpenGL 
-PyOpenGL_accelerate
-ttkbootstrap
+certifi==2021.10.8
+glfw==2.5.0
+numpy==1.21.5
+Pillow==9.0.0
+PyOpenGL==3.1.5
+PyOpenGL-accelerate==3.1.5
+ttkbootstrap==1.3.1
