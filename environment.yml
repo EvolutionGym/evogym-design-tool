@@ -5,7 +5,7 @@ dependencies:
   - ca-certificates=2021.10.26
   - certifi=2021.10.8
   - openssl=1.1.1l
-  - pip=21.2.4
+  - pip=20.1.1
   - python=3.7.11
   - setuptools=58.0.4
   - sqlite=3.37.0
