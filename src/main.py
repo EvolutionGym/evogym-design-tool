@@ -4,10 +4,14 @@ import env
 import gui
 
 import time
+from tkinter import Tk
+
+gui_master = Tk()
+gui_master.title('EvoGym Design Interface GUI')
 
 main_env = env.Env()
 main_viewer = viewer.Viewer('EvoGym Design Interface')
-gui_viewer = gui.GUI('EvoGym Design Interface GUI', main_viewer.window_data)
+gui_viewer = gui.GUI(gui_master, main_viewer.window_data)
 
 gui_viewer.set_funcs(
     main_env.save, 

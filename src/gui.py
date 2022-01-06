@@ -11,11 +11,9 @@ import utils
 #https://github.com/israel-dryer/ttkbootstrap/blob/master/src/ttkcreator/__init__.py
 
 class GUI:
-    def __init__(self, name, window_data):
+    def __init__(self, master, window_data):
 
-        self.master = Tk()
-        self.master.title(name)
-        
+        self.master = master
 
         mx, my, fy = window_data
         self.width = mx//4
