@@ -341,6 +341,7 @@ class Viewer:
             self.render_selected_edges(grid)
 
         glfw.swap_buffers(self.window)
+        glfw.poll_events()
 
     def update_and_render(self, grid, objects, node_to_object, hovered_object_id, selected_object_id, just_altered, mode):
 
@@ -358,8 +359,6 @@ class Viewer:
         if self.timer.should_step():
             self.render(grid, objects, hovered_object_id, selected_object_id, mode)
             self.timer.step()
-
-        glfw.poll_events()
 
     def reset(self,):
         glClearColor(*colors.CLEAR_COLOR)
