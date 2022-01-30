@@ -23,7 +23,7 @@ gui_viewer.set_funcs(
 def main():
     while not main_viewer.get_window_close():
 
-        main_viewer.render(
+        main_viewer.update_and_render(
             main_env.grid, main_env.objects,
             main_env.node_to_object,
             main_env.hovered_object_id,

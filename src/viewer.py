@@ -21,6 +21,8 @@ from OpenGL.GLUT import *
 import colors
 import utils
 
+from evogym import Timer
+
 class Viewer:
 
     has_init_glfw = False
@@ -92,6 +94,8 @@ class Viewer:
         self.arrow_cursor = glfw.create_standard_cursor(glfw.ARROW_CURSOR)
         self.hand_cursor = glfw.create_standard_cursor(glfw.HAND_CURSOR)
         self.cursor_mode = utils.ARROW_CURSOR
+
+        self.timer = Timer(30)
 
     def load(self, file_name):
         self.currently_hovered = None
@@ -324,7 +328,21 @@ class Viewer:
         if self.cursor_mode == utils.HAND_CURSOR:
             glfw.set_cursor(self.window, self.hand_cursor)
 
-    def render(self, grid, objects, node_to_object, hovered_object_id, selected_object_id, just_altered, mode):
+    def render(self, grid, objects, hovered_object_id, selected_object_id, mode):
+        
+        glfw.make_context_current(self.window)
+        glViewport(0, 0, self.res_width, self.res_height)
+        self.reset()
+
+        self.render_grid(grid, mode==utils.VOXELS)
+        self.render_voxels(grid, mode==utils.VOXELS)
+        self.render_edges(grid, objects, hovered_object_id, selected_object_id)
+        if mode == utils.EDGES:
+            self.render_selected_edges(grid)
+
+        glfw.swap_buffers(self.window)
+
+    def update_and_render(self, grid, objects, node_to_object, hovered_object_id, selected_object_id, just_altered, mode):
 
         self.cursor_mode = utils.ARROW_CURSOR
         self.grid_width, self.grid_height = len(grid[0]), len(grid)
@@ -337,17 +355,10 @@ class Viewer:
         self.update_selected(grid, node_to_object, just_altered)
         self.update_cursor()
 
-        glfw.make_context_current(self.window)
-        glViewport(0, 0, self.res_width, self.res_height)
-        self.reset()
+        if self.timer.should_step():
+            self.render(grid, objects, hovered_object_id, selected_object_id, mode)
+            self.timer.step()
 
-        self.render_grid(grid, mode==utils.VOXELS)
-        self.render_voxels(grid, mode==utils.VOXELS)
-        self.render_edges(grid, objects, hovered_object_id, selected_object_id)
-        if mode == utils.EDGES:
-            self.render_selected_edges(grid)
-
-        glfw.swap_buffers(self.window)
         glfw.poll_events()
 
     def reset(self,):
@@ -618,13 +629,3 @@ class Viewer:
     def safe_close(self,):
         glfw.terminate()
 
-def main():
-    v1 = Viewer()
-    while True:
-        v1.render()
-        print(v1.get_mouse_pos())
-    glfw.terminate()
-
-
-if __name__ == "__main__":
-    main()
