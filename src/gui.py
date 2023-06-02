@@ -16,7 +16,7 @@ class GUI:
         self.master = master
 
         mx, my, fy = window_data
-        self.width = mx//4
+        self.width = mx
         self.height = my
 
 
